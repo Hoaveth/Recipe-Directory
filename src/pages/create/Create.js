@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useState, useRef } from "react";
+import { useHistory } from "react-router-dom";
 import { useFetch } from "../../hooks/useFetch";
 
 //styles
 import "./Create.css";
 
 export default function Create() {
+  let history = useHistory();
   const [title, setTitle] = useState("");
   const [method, setMethod] = useState("");
   const [cookingTime, setCookingTime] = useState("");
@@ -20,6 +22,8 @@ export default function Create() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    //set the postData and send a POST request
     postData({
       title,
       ingredients,
@@ -31,13 +35,23 @@ export default function Create() {
   const handleAddIngredient = (e) => {
     e.preventDefault();
     const ing = newIngredient.trim();
-    console.log(ing);
+
+    //Check if ingredient is unique
     if (ing && !ingredients.includes(ing)) {
       setIngredients((prevIngredients) => [...prevIngredients, ing]);
     }
+
+    //Clear the newIngredient and set focus
     setNewIngredient("");
     ingredientInput.current.focus();
   };
+
+  useEffect(() => {
+    //Redirect the user to the homepage
+    if (data) {
+      history.push("/");
+    }
+  }, [data, history]);
 
   return (
     <div className="create">

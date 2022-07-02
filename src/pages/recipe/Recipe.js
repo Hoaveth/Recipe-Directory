@@ -1,15 +1,39 @@
-import React from "react";
-import { useFetch } from "../../hooks/useFetch";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useHistory, useParams } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
 //styles
 import "./Recipe.css";
 
+import { projectFirestore } from "../../firebase/config";
+
 export default function Recipe() {
   const { id } = useParams();
-  const url = "http://localhost:3000/recipes/" + id;
-  const { data: recipe, isPending, error } = useFetch(url);
   const { mode } = useTheme();
+  const history = useHistory();
+  const [recipe, setRecipe] = useState(null);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setIsPending(true);
+    projectFirestore
+      .collection("recipes")
+      .doc(id)
+      .get()
+      .then((doc) => {
+        if (doc.exists) {
+          setRecipe(doc.data());
+          setIsPending(false);
+        } else {
+          setError("No Document found");
+          setIsPending(false);
+        }
+      });
+  }, [id]);
+
+  const handleUpdate = () => {
+    history.push(`/update/${id}`);
+  };
 
   return (
     <div className={`recipe ${mode}`}>
@@ -25,6 +49,9 @@ export default function Recipe() {
             ))}
           </ul>
           <p className="method">{recipe.method}</p>
+          <button className="update-button" onClick={() => handleUpdate()}>
+            Update Me
+          </button>
         </>
       )}
     </div>

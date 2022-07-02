@@ -1,13 +1,21 @@
 import React, { useEffect } from "react";
 import { useState, useRef } from "react";
-import { useHistory } from "react-router-dom";
-import { useFetch } from "../../hooks/useFetch";
+import { useHistory, useParams } from "react-router-dom";
+import { projectFirestore } from "../../firebase/config";
 
 //styles
 import "./Create.css";
 
 export default function Create() {
   let history = useHistory();
+
+  //For updating recipe
+  const { id: updateId } = useParams();
+  const isUpdate = updateId !== null || updateId !== undefined ? true : false;
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState(false);
+
+  //For creating recipe
   const [title, setTitle] = useState("");
   const [method, setMethod] = useState("");
   const [cookingTime, setCookingTime] = useState("");
@@ -15,21 +23,27 @@ export default function Create() {
   const [ingredients, setIngredients] = useState("");
   const ingredientInput = useRef(null);
 
-  const { postData, data, error } = useFetch(
-    "http://localhost:3000/recipes",
-    "POST"
-  );
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     //set the postData and send a POST request
-    postData({
+    const doc = {
       title,
       ingredients,
       method,
       cookingTime: cookingTime + " minutes",
-    });
+    };
+
+    try {
+      if (!isUpdate) {
+        await projectFirestore.collection("recipes").add(doc);
+      } else {
+        projectFirestore.collection("recipes").doc(updateId).update(doc);
+      }
+      history.push("/");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const handleAddIngredient = (e) => {
@@ -47,15 +61,34 @@ export default function Create() {
   };
 
   useEffect(() => {
-    //Redirect the user to the homepage
-    if (data) {
-      history.push("/");
+    if (isUpdate) {
+      projectFirestore
+        .collection("recipes")
+        .doc(updateId)
+        .get()
+        .then((doc) => {
+          if (doc.exists) {
+            let recipe = doc.data();
+            setTitle(recipe.title);
+            setCookingTime(parseInt(recipe.cookingTime));
+            setMethod(recipe.method);
+            setIngredients(recipe.ingredients);
+            setIsPending(false);
+          } else {
+            setError("No Document found");
+            setIsPending(false);
+          }
+        });
     }
-  }, [data, history]);
+  }, [updateId, isUpdate]);
 
   return (
     <div className="create">
-      <h2 className="page-title"> Add a New Recipe </h2>
+      {error && <p className="error">{error}</p>}
+      {isPending && <p className="loading">Loading...</p>}
+      <h2 className="page-title">
+        {isUpdate ? `Add a New Recipe` : `Update Recipe`}
+      </h2>
       <form onSubmit={handleSubmit}>
         <label>
           <span>Recipe Title:</span>

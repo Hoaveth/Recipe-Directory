@@ -29,6 +29,9 @@ function App() {
           <Route path="/recipes/:id">
             <Recipe />
           </Route>
+          <Route path="/update/:id">
+            <Create />
+          </Route>
         </Switch>
       </BrowserRouter>
     </div>
